@@ -31,7 +31,7 @@ Building the APK from source
 
 Clone the source code including the `net-speech-api` and `speechutils` submodules:
 
-    git clone --recursive git@github.com:Kaljurand/K6nele.git
+    git clone --recursive git@github.com:SWEN-789/dhh-project-ptr5201.git
 
 
 Point to the Android SDK directory by setting the environment variable
