@@ -1,7 +1,7 @@
 Kõnele: dhh-project-ptr5201
 ======
 
-This copy of the Kõnele repo contains a feature to provide assistance in communication between the Deaf and Hard of Hearing (DHH) and Hearing (H).
+This copy of the Kõnele repo contains a feature to provide assistance in communication between the Deaf and Hard of Hearing (DHH) and Hearing (H). The Chat Demo has been modified so that after a user finishes speaking, the demo will not only transcribe the spoken text as before, but also provide a list of suggested responses based on the context of what was spoken. For instance, a greeting in spoken text will be met with several response greetings that a user can choose from. When a user clicks the response to choose from, it will appear in the list on the screen beneath the previously spoken text. This feature was added to demonstrate potential functionality in simplifying communication for the DHH with the H. A list of automated, suggested text responses based on spoken words from other users can help give more equal access to the DHH by providing them quicker means of communication and reducing the amount of effort in communicating, as was done for the H by means of transcribing spoken text.
 
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/b15968aa0a524d2986ba5deac6801196)](https://www.codacy.com/app/kaljurand/K6nele)
 
