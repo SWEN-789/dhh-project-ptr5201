@@ -1,0 +1,9 @@
+.gradle/
+.idea/
+app/build/
+app/dhh-project-ptr5201-app.iml
+dhh-project-ptr5201.iml
+gradle/
+gradlew
+gradlew.bat
+local.properties
