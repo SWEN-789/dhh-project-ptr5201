@@ -23,11 +23,15 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.speech.RecognizerIntent
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
+import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.Toast
 import ee.ioc.phon.android.speak.R
+import ee.ioc.phon.android.speak.adapter.RecyclerViewAdapter
 import ee.ioc.phon.android.speak.model.CallerInfo
 import ee.ioc.phon.android.speak.utils.Utils
 import ee.ioc.phon.android.speak.view.AbstractSpeechInputViewListener
@@ -36,6 +40,7 @@ import ee.ioc.phon.android.speechutils.editor.UtteranceRewriter
 import ee.ioc.phon.android.speechutils.utils.IntentUtils
 import ee.ioc.phon.android.speechutils.utils.JsonUtils
 import org.json.JSONException
+import java.util.*
 
 /**
  * Simple chat style interface, which demonstrates how to use SpeechInputView.
@@ -43,12 +48,16 @@ import org.json.JSONException
  * TODO: each list item should have at least 3 components: spoken input,
  * pretty-printed output (JSON, or parts of it), formal output (JSON that can be executed)
  */
-class ChatDemoActivity : Activity() {
+class ChatDemoActivity : Activity(), RecyclerViewAdapter.ItemClickListener {
 
     private val mMatches = ArrayList<String>()
+    private val contextPhrasesMap = HashMap<String, List<String>>()
+    private val contextSuggestedResponsesMap = HashMap<String, List<String>>()
 
     private var mPrefs: SharedPreferences? = null
     private var mRes: Resources? = null
+
+    private var suggestedRecyclerViewAdapter: RecyclerViewAdapter? = null
 
     val speechInputViewListener: SpeechInputView.SpeechInputViewListener
         get() = object : AbstractSpeechInputViewListener() {
@@ -67,6 +76,12 @@ class ChatDemoActivity : Activity() {
                     updateListView(mMatches)
                     // TODO: store the JSON also in the list, so that it can be reexecuted later
                     IntentUtils.launchIfIntent(this@ChatDemoActivity, mRewriters, result)
+
+                    val suggestedResponses = getSuggestedResponses(result)
+                    if (!suggestedResponses.isEmpty()) {
+                        // present list of suggested responses to user
+                        updateRecyclerView(suggestedResponses)
+                    }
                 }
             }
 
@@ -79,6 +94,23 @@ class ChatDemoActivity : Activity() {
                 // stopTts();
             }
         }
+
+    private fun getSuggestedResponses(speakerText: String): List<String> {
+        var suggestedResponses: List<String> = ArrayList()
+        val iterator = contextPhrasesMap.iterator()
+        var speakerContext = ""
+        if (speakerText.isNotBlank()) {
+            iterator.forEach {
+                if (it.value.contains(speakerText)) {
+                    speakerContext = it.key
+                }
+            }
+            if (speakerContext.isNotBlank()) {
+                suggestedResponses = contextSuggestedResponsesMap[speakerContext] ?: ArrayList()
+            }
+        }
+        return suggestedResponses
+    }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,9 +125,27 @@ class ChatDemoActivity : Activity() {
         siv.init(R.array.keysActivity, callerInfo, 0)
         siv.setListener(speechInputViewListener, null)
 
+        initializeContextPhrasesAndResponses()
+
         (findViewById(R.id.list_matches) as ListView).onItemClickListener = AdapterView.OnItemClickListener { parent, _, position, _ ->
             val entry = parent.adapter.getItem(position)
             startActivity(entry.toString())
+        }
+
+        findViewById<RecyclerView>(R.id.suggestedReponses).layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        suggestedRecyclerViewAdapter = RecyclerViewAdapter(ArrayList<String>())
+        suggestedRecyclerViewAdapter!!.setClickListener(this)
+        updateRecyclerView(ArrayList())
+    }
+
+    override fun onItemClick(view: View, position: Int) {
+        suggestedRecyclerViewAdapter.let {
+            val suggestedTextResponseClicked = it?.getItem(position)
+            if (suggestedTextResponseClicked != null) {
+                mMatches.add(suggestedTextResponseClicked)
+                updateListView(mMatches)
+                updateRecyclerView(ArrayList())
+            }
         }
     }
 
@@ -108,7 +158,12 @@ class ChatDemoActivity : Activity() {
     }
 
     private fun updateListView(list: List<String>) {
-        (findViewById(R.id.list_matches) as ListView).adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, list)
+        findViewById<ListView>(R.id.list_matches).adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, list)
+    }
+
+    private fun updateRecyclerView(list: List<String>) {
+        suggestedRecyclerViewAdapter?.setMDataset(list)
+        findViewById<RecyclerView>(R.id.suggestedReponses).adapter = suggestedRecyclerViewAdapter
     }
 
     private fun toast(message: String) {
@@ -119,5 +174,15 @@ class ChatDemoActivity : Activity() {
         val bundle = Bundle()
         bundle.putInt(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
         return bundle
+    }
+
+    private fun initializeContextPhrasesAndResponses() {
+        contextPhrasesMap["greetings"] = Arrays.asList("hello", "hi")
+        contextPhrasesMap["introductions"] = Arrays.asList("how are you", "how's it going", "what's up")
+        contextPhrasesMap["food service"] = Arrays.asList("what would you like to order")
+
+        contextSuggestedResponsesMap["greetings"] = Arrays.asList("hello", "hi")
+        contextSuggestedResponsesMap["introductions"] = Arrays.asList("good, you", "bad", "okay", "doing good, you", "i'm okay", "i'm doing well, how about you")
+        contextSuggestedResponsesMap["food service"] = Arrays.asList("can i please get")
     }
 }

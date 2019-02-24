@@ -44,11 +44,31 @@
 
     </ee.ioc.phon.android.speak.view.SpeechInputView>
 
+    <HorizontalScrollView
+        android:id="@+id/suggestedResponsesContainer"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_above="@id/vSpeechInputView">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/suggestedReponses"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
     <ListView
         android:id="@+id/list_matches"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_above="@id/vSpeechInputView"
+        android:layout_above="@id/suggestedResponsesContainer"
         android:layout_alignParentTop="true"
         android:fontFamily="monospace"
         android:stackFromBottom="true"
