@@ -77,6 +77,8 @@ class ChatDemoActivity : Activity(), RecyclerViewAdapter.ItemClickListener {
                     // TODO: store the JSON also in the list, so that it can be reexecuted later
                     IntentUtils.launchIfIntent(this@ChatDemoActivity, mRewriters, result)
 
+                    // Get a list of suggested responses based on the spoken text, and shows the list to the user if responses were returned.
+                    // Currently does not support the ability to add responses from users that don't exist in the collections yet.
                     val suggestedResponses = getSuggestedResponses(result)
                     if (!suggestedResponses.isEmpty()) {
                         // present list of suggested responses to user
@@ -95,13 +97,18 @@ class ChatDemoActivity : Activity(), RecyclerViewAdapter.ItemClickListener {
             }
         }
 
-    private fun getSuggestedResponses(speakerText: String): List<String> {
+    /**
+     * Look up the appropriate suggested response based on the phrase text provided. Will return an empty array list if no responses could be found.
+     * Currently does not add phrases and responses entered by users if the phrases don't exist in the collections yet, since additional processing
+     * would be required to determine what context the unknown phrase is and map the user's last response to the last phrase text.
+     */
+    private fun getSuggestedResponses(phraseText: String): List<String> {
         var suggestedResponses: List<String> = ArrayList()
         val iterator = contextPhrasesMap.iterator()
         var speakerContext = ""
-        if (speakerText.isNotBlank()) {
+        if (phraseText.isNotBlank()) {
             iterator.forEach {
-                if (it.value.contains(speakerText)) {
+                if (it.value.contains(phraseText)) {
                     speakerContext = it.key
                 }
             }
@@ -138,12 +145,17 @@ class ChatDemoActivity : Activity(), RecyclerViewAdapter.ItemClickListener {
         updateRecyclerView(ArrayList())
     }
 
+    /**
+     * When a suggested response is clicked, add it to the list of other spoken words and previous responses.
+     */
     override fun onItemClick(view: View, position: Int) {
         suggestedRecyclerViewAdapter.let {
             val suggestedTextResponseClicked = it?.getItem(position)
-            if (suggestedTextResponseClicked != null) {
+            if (suggestedTextResponseClicked is String && suggestedTextResponseClicked.isNotBlank()) {
+                // Add the suggested response that was selected to the list of spoken words
                 mMatches.add(suggestedTextResponseClicked)
                 updateListView(mMatches)
+                // Clear the list of suggested responses once a response has been selected
                 updateRecyclerView(ArrayList())
             }
         }
@@ -162,6 +174,8 @@ class ChatDemoActivity : Activity(), RecyclerViewAdapter.ItemClickListener {
     }
 
     private fun updateRecyclerView(list: List<String>) {
+        // Updating the list in the RecyclerViewAdapter instead of recreating the adapter from scratch. This avoids having to re-add things to the
+        // adapter, like the click listener
         suggestedRecyclerViewAdapter?.setMDataset(list)
         findViewById<RecyclerView>(R.id.suggestedReponses).adapter = suggestedRecyclerViewAdapter
     }
@@ -176,6 +190,14 @@ class ChatDemoActivity : Activity(), RecyclerViewAdapter.ItemClickListener {
         return bundle
     }
 
+    /**
+     * Initialize phrases and suggested responses based on certain contexts. contextPhrasesMap contains phrases that map to certain contexts, and
+     * contextSuggestedResponsesMap contains suggested responses to the statements for the particular contexts that the prior phrases were for.
+     * Ideally, this initialization would be located in a service that can be re-used by other components, and even be located in an API that
+     * different kinds of applications or software programs could access. In addition, larger sets of data, like dictionaries, would be used to map
+     * contexts with phrases and suggested responses. Also, other languages besides English would be supported. Furthermore, the functionality should
+     * adapt to the ongoing use of phrases and suggested responses that haven't been used yet.
+     */
     private fun initializeContextPhrasesAndResponses() {
         contextPhrasesMap["greetings"] = Arrays.asList("hello", "hi")
         contextPhrasesMap["introductions"] = Arrays.asList("how are you", "how's it going", "what's up")
